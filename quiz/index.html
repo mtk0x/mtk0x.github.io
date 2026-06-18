@@ -389,7 +389,10 @@
     return {
       name: state.name,
       jobType: state.jobType,
-      answers: state.answers,        // [{id, selected, timeSec, timedOut}]
+      // 未入力(null)は 0 にして送る（シート側のコード版にも依存しないようクライアントで確定）
+      answers: state.answers.map(function (a) {
+        return { id: a.id, selected: a.selected == null ? 0 : a.selected, timeSec: a.timeSec, timedOut: a.timedOut };
+      }),
       startedAt: state.startedAt,
       submittedAt: new Date().toISOString()
     };

@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>パターン認識クイズ</title>
+<style>
+  :root {
+    --blue: #2563eb;
+    --blue-dark: #1d4ed8;
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --text: #1e293b;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --danger: #dc2626;
+    --warn: #f59e0b;
+    --ok: #16a34a;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN", "Noto Sans JP", Meiryo, sans-serif;
+    background: var(--bg); color: var(--text);
+    -webkit-text-size-adjust: 100%;
+  }
+  .wrap {
+    max-width: 880px; margin: 0 auto; padding: 24px 16px 48px;
+    min-height: 100vh; display: flex; flex-direction: column;
+  }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 28px 28px 32px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.04);
+  }
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  h1 { font-size: 22px; margin: 0 0 8px; }
+  h2 { font-size: 18px; margin: 0 0 12px; }
+  p  { line-height: 1.7; margin: 0 0 12px; }
+  .muted { color: var(--muted); font-size: 14px; }
+
+  /* ---- Start screen ---- */
+  .field { margin: 18px 0; }
+  .field label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+  .field input, .field select {
+    width: 100%; padding: 12px 14px; font-size: 16px;
+    border: 1px solid var(--border); border-radius: 10px; background: #fff; color: var(--text);
+  }
+  .field input:focus, .field select:focus { outline: 2px solid var(--blue); border-color: var(--blue); }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    border: none; cursor: pointer; font-size: 16px; font-weight: 600;
+    padding: 13px 22px; border-radius: 10px; background: var(--blue); color: #fff;
+    transition: background .15s, opacity .15s;
+  }
+  .btn:hover { background: var(--blue-dark); }
+  .btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+  .btn-ghost { background: #fff; color: var(--blue); border: 1px solid var(--blue); }
+  .btn-ghost:hover { background: #eff6ff; }
+  .btn-row { display: flex; justify-content: flex-end; margin-top: 20px; }
+
+  /* ---- Top bar (progress + timer) ---- */
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 12px; }
+  .progress-label { font-size: 14px; font-weight: 600; color: var(--muted); }
+  .timer { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 20px; color: var(--blue); }
+  .timer.warn { color: var(--warn); }
+  .timer.danger { color: var(--danger); }
+  .timebar-track { height: 8px; background: var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 18px; }
+  .timebar-fill { height: 100%; width: 100%; background: var(--blue); border-radius: 99px; transition: width .25s linear, background .25s; }
+  .timebar-fill.warn { background: var(--warn); }
+  .timebar-fill.danger { background: var(--danger); }
+
+  /* ---- Question image ---- */
+  .qimg-box { text-align: center; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 18px; }
+  .qimg-box img { max-width: 100%; height: auto; }
+
+  /* ---- Number grid (1-12, 3 rows x 4 cols) ---- */
+  .numgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-width: 480px; }
+  .numbtn {
+    height: 46px;
+    font-size: 18px; font-weight: 700;
+    border: 2px solid var(--border); border-radius: 10px; background: #fff; color: var(--text);
+    cursor: pointer; transition: all .12s;
+  }
+  .numbtn:hover { border-color: var(--blue); }
+  .numbtn.selected { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .grid-hint { font-size: 13px; color: var(--muted); margin: 14px 0 6px; }
+
+  /* ---- Warmup explanation ---- */
+  .explain { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin: 16px 0; }
+  .explain h2 { font-size: 16px; }
+  .explain p { font-size: 14px; }
+  .explain ul { margin: 8px 0 0; padding-left: 20px; }
+  .explain li { font-size: 14px; line-height: 1.7; margin-bottom: 6px; }
+  .badge { display: inline-block; background: #fef3c7; color: #92400e; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 99px; margin-bottom: 10px; }
+
+  /* ---- End screen ---- */
+  .end-icon { font-size: 48px; text-align: center; margin-bottom: 12px; }
+  .center { text-align: center; }
+
+  @media (max-width: 520px) {
+    .card { padding: 20px 16px 24px; }
+    .numbtn { font-size: 17px; height: 44px; }
+    .numgrid { max-width: none; }
+    h1 { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ===== START ===== -->
+  <section id="screen-start" class="screen active">
+    <div class="card">
+      <h1>パターン認識クイズ</h1>
+      <p class="muted">所要時間の目安：約7分（ウォーミングアップ1問＋本番6問、各1分）</p>
+      <p>パターン（規則性）を見つける問題に取り組んでいただきます。左側のイラストの「?」に当てはまるものを、右側の選択肢から選んでください。</p>
+
+      <ul class="muted" style="line-height:1.8;">
+        <li>各問の制限時間は <strong>60秒</strong> です。時間切れで自動的に次へ進みます。</li>
+        <li>「次へ」で先に進めますが、<strong>前の問題には戻れません</strong>。</li>
+      </ul>
+
+      <div class="field">
+        <label for="in-name">お名前（必須）</label>
+        <input id="in-name" type="text" autocomplete="name" placeholder="例：山田 太郎">
+      </div>
+      <div class="field">
+        <label for="in-job">応募職種（必須）</label>
+        <select id="in-job">
+          <option value="" selected disabled>選択してください</option>
+          <option value="プロダクトエンジニア">プロダクトエンジニア</option>
+          <option value="bizops">bizops</option>
+        </select>
+      </div>
+
+      <div class="btn-row">
+        <button id="btn-start" class="btn" disabled>はじめる</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== WARMUP ===== -->
+  <section id="screen-warmup" class="screen">
+    <div class="card">
+      <div class="topbar">
+        <span class="progress-label">ウォーミングアップ（採点対象外）</span>
+        <span id="warmup-timer" class="timer">1:00</span>
+      </div>
+      <div class="timebar-track"><div id="warmup-bar" class="timebar-fill"></div></div>
+
+      <p>この問題はウォーミングアップ用です。<strong>採点対象外</strong>なので、気軽に解き方を確認してください。</p>
+
+      <div class="qimg-box"><img src="images/warmup.png" alt="ウォーミングアップ問題"></div>
+
+      <div class="explain">
+        <h2>回答方法</h2>
+        <p>右側の選択肢には 1〜12 の番号が振られています（上段 1-4 ／ 中段 5-8 ／ 下段 9-12）。選択肢から当てはまる位置の番号を選んでください。</p>
+      </div>
+
+      <div class="explain">
+        <h2>解き方のポイント（この問題の場合）</h2>
+        <p>左側の 3×3 マスには規則が隠れています。「?」に入るものを規則から推測し、右側の選択肢から答えを選びます。この問題には規則が2つあります。</p>
+        <ul>
+          <li><strong>規則1：線の角度</strong> ― 各行を左から右に見ると、線が45度ずつ回転しています。</li>
+          <li><strong>規則2：丸の数</strong> ― 各行を左から右に見ると、丸の数が1つずつ増えています（2個 → 3個 → ?個）。</li>
+        </ul>
+      </div>
+
+      <div class="btn-row">
+        <button id="btn-warmup-next" class="btn">本番へ進む</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== QUIZ (reused q1-q6) ===== -->
+  <section id="screen-quiz" class="screen">
+    <div class="card">
+      <div class="topbar">
+        <span id="q-progress" class="progress-label">問題 1 / 6</span>
+        <span id="q-timer" class="timer">1:00</span>
+      </div>
+      <div class="timebar-track"><div id="q-bar" class="timebar-fill"></div></div>
+
+      <div class="qimg-box"><img id="q-img" src="" alt="問題"></div>
+
+      <p class="grid-hint">右側の選択肢に対応する番号（1〜12）を選んでください。</p>
+      <div id="numgrid" class="numgrid"></div>
+
+      <div class="btn-row">
+        <button id="btn-q-next" class="btn">次へ</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== END ===== -->
+  <section id="screen-end" class="screen">
+    <div class="card center">
+      <div class="end-icon">✓</div>
+      <h1>お疲れさまでした</h1>
+      <p>回答を送信しました。ご協力ありがとうございました。</p>
+      <p class="muted">この画面は閉じていただいて構いません。</p>
+      <p id="submit-note" class="muted"></p>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ====== CONFIG ======
+  var TIME_LIMIT = 60;            // 秒/問
+  var ENDPOINT = "https://script.google.com/macros/s/AKfycbyjoeWukD4tKR7n8THfWCzuao1zZHgza2ANc1bRMoTWBxb9YfdJIlUY-aRop06Yq9gU/exec";  // Apps Script Web App URL（空ならプレビュー＝コンソール出力のみ）
+  var QUESTIONS = [
+    { id: "q1", img: "images/q1.png" },
+    { id: "q2", img: "images/q2.png" },
+    { id: "q3", img: "images/q3.png" },
+    { id: "q4", img: "images/q4.png" },
+    { id: "q5", img: "images/q5.png" },
+    { id: "q6", img: "images/q6.png" }
+  ];
+
+  // ====== STATE ======
+  var state = {
+    name: "", jobType: "",
+    startedAt: null,
+    qIndex: 0,
+    selection: null,           // 現在の問題で選択中の番号
+    questionStart: 0,          // 現在の問題の開始時刻(ms)
+    answers: [],               // {id, selected, timeSec}
+    advancing: false
+  };
+  var timerRAF = null;
+
+  // ====== DOM ======
+  function $(id) { return document.getElementById(id); }
+  function show(screenId) {
+    var list = document.querySelectorAll(".screen");
+    for (var i = 0; i < list.length; i++) list[i].classList.remove("active");
+    $(screenId).classList.add("active");
+    window.scrollTo(0, 0);
+  }
+  function fmt(sec) {
+    sec = Math.max(0, Math.ceil(sec));
+    var m = Math.floor(sec / 60), s = sec % 60;
+    return m + ":" + (s < 10 ? "0" + s : s);
+  }
+
+  // ====== TIMER (Date.now ベース、タブ非アクティブでもズレない) ======
+  function startTimer(startMs, timerEl, barEl, onExpire) {
+    cancelTimer();
+    function tick() {
+      var elapsed = (Date.now() - startMs) / 1000;
+      var remaining = TIME_LIMIT - elapsed;
+      var ratio = Math.max(0, remaining / TIME_LIMIT);
+      timerEl.textContent = fmt(remaining);
+      barEl.style.width = (ratio * 100) + "%";
+      // 色変化
+      timerEl.classList.remove("warn", "danger");
+      barEl.classList.remove("warn", "danger");
+      if (remaining <= 10) { timerEl.classList.add("danger"); barEl.classList.add("danger"); }
+      else if (remaining <= 20) { timerEl.classList.add("warn"); barEl.classList.add("warn"); }
+
+      if (remaining <= 0) { cancelTimer(); onExpire(); return; }
+      timerRAF = requestAnimationFrame(tick);
+    }
+    tick();
+  }
+  function cancelTimer() {
+    if (timerRAF) { cancelAnimationFrame(timerRAF); timerRAF = null; }
+  }
+
+  // ====== START SCREEN ======
+  var nameEl = $("in-name"), jobEl = $("in-job"), startBtn = $("btn-start");
+  function validateStart() {
+    startBtn.disabled = !(nameEl.value.trim() && jobEl.value);
+  }
+  nameEl.addEventListener("input", validateStart);
+  jobEl.addEventListener("change", validateStart);
+  // Enter キーでの不意なクイズ開始を防止（開始はボタンクリックのみ）
+  [nameEl, jobEl].forEach(function (el) {
+    el.addEventListener("keydown", function (e) { if (e.key === "Enter") e.preventDefault(); });
+  });
+
+  startBtn.addEventListener("click", function () {
+    state.name = nameEl.value.trim();
+    state.jobType = jobEl.value;
+    state.startedAt = new Date().toISOString();
+    blockBack();
+    goWarmup();
+  });
+
+  // ====== WARMUP ======
+  function goWarmup() {
+    show("screen-warmup");
+    var done = false;
+    function finish() { if (done) return; done = true; cancelTimer(); startQuiz(); }
+    $("btn-warmup-next").onclick = finish;
+    startTimer(Date.now(), $("warmup-timer"), $("warmup-bar"), finish);
+  }
+
+  // ====== QUIZ ======
+  function buildNumGrid() {
+    var grid = $("numgrid");
+    grid.innerHTML = "";
+    for (var n = 1; n <= 12; n++) {
+      (function (num) {
+        var b = document.createElement("button");
+        b.className = "numbtn";
+        b.textContent = num;
+        b.onclick = function () { selectNumber(num); };
+        grid.appendChild(b);
+      })(n);
+    }
+  }
+  function selectNumber(num) {
+    state.selection = num;
+    var btns = $("numgrid").querySelectorAll(".numbtn");
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].classList.toggle("selected", (i + 1) === num);
+    }
+  }
+
+  function startQuiz() {
+    buildNumGrid();
+    state.qIndex = 0;
+    renderQuestion();
+  }
+
+  function renderQuestion() {
+    state.advancing = false;
+    state.selection = null;
+    var q = QUESTIONS[state.qIndex];
+    $("q-progress").textContent = "問題 " + (state.qIndex + 1) + " / " + QUESTIONS.length;
+    $("q-img").src = q.img;
+    $("q-img").alt = "問題 " + (state.qIndex + 1);
+    // 選択クリア
+    var btns = $("numgrid").querySelectorAll(".numbtn");
+    for (var i = 0; i < btns.length; i++) btns[i].classList.remove("selected");
+    show("screen-quiz");
+    state.questionStart = Date.now();
+    startTimer(state.questionStart, $("q-timer"), $("q-bar"), function () { advance(true); });
+  }
+
+  $("btn-q-next").onclick = function () { advance(false); };
+
+  function advance(autoByTimeout) {
+    if (state.advancing) return;     // 自動送り×手動の二重遷移ガード
+    state.advancing = true;
+    cancelTimer();
+    var timeSec = Math.min(TIME_LIMIT, (Date.now() - state.questionStart) / 1000);
+    state.answers.push({
+      id: QUESTIONS[state.qIndex].id,
+      selected: state.selection,     // 未選択(時間切れ等)は null
+      timeSec: Math.round(timeSec * 10) / 10,
+      timedOut: !!autoByTimeout && state.selection === null
+    });
+    state.qIndex++;
+    if (state.qIndex < QUESTIONS.length) {
+      renderQuestion();
+    } else {
+      finishQuiz();
+    }
+  }
+
+  // ====== FINISH / SUBMIT (現状スタブ：ENDPOINT 空ならコンソール出力のみ) ======
+  function buildPayload() {
+    return {
+      name: state.name,
+      jobType: state.jobType,
+      answers: state.answers,        // [{id, selected, timeSec, timedOut}]
+      startedAt: state.startedAt,
+      submittedAt: new Date().toISOString()
+    };
+  }
+  function finishQuiz() {
+    cancelTimer();
+    var payload = buildPayload();
+    show("screen-end");
+    allowBack();
+
+    if (!ENDPOINT) {
+      console.log("[PREVIEW] 送信予定データ（バックエンド未接続）:", payload);
+      $("submit-note").textContent = "（プレビュー：送信先未設定。データはコンソールに出力しています）";
+      return;
+    }
+    // Apps Script Web App へ送信：text/plain + no-cors（プリフライト回避・投げっぱなし）
+    fetch(ENDPOINT, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    }).catch(function (e) { console.error("送信エラー", e); });
+  }
+
+  // ====== 戻る封じ（best-effort） ======
+  function blockBack() {
+    history.pushState(null, "", location.href);
+    window.addEventListener("popstate", onPop);
+    window.addEventListener("beforeunload", onBeforeUnload);
+  }
+  function onPop() { history.pushState(null, "", location.href); }
+  function onBeforeUnload(e) { e.preventDefault(); e.returnValue = ""; }
+  function allowBack() {
+    window.removeEventListener("beforeunload", onBeforeUnload);
+  }
+
+  validateStart();
+})();
+</script>
+</body>
+</html>

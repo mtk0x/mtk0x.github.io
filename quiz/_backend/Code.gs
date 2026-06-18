@@ -40,7 +40,8 @@ function doPost(e) {
     // 回答を id でひけるように
     var ans = {};
     (data.answers || []).forEach(function (a) { ans[a.id] = a; });
-    function sel(id) { return (ans[id] && ans[id].selected != null) ? ans[id].selected : ''; }
+    // 未回答（番号を選ばなかった）の場合は 0 を入れる（空白にしない）
+    function sel(id) { return (ans[id] && ans[id].selected != null) ? ans[id].selected : 0; }
 
     // 既存データの最終行は「A列（タイムスタンプ）」基準で判定する。
     // （B/D が ARRAYFORMULA だと getLastRow() が膨らむため、A列の中身で数える）

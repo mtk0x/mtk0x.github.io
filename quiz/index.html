@@ -26,8 +26,12 @@
     -webkit-text-size-adjust: 100%;
   }
   .wrap {
-    max-width: 880px; margin: 0 auto; padding: 24px 16px 48px;
+    max-width: 1080px; margin: 0 auto; padding: 24px 16px 48px;
     min-height: 100vh; display: flex; flex-direction: column;
+  }
+  /* 本番(quiz)以外は従来幅に固定 → サンプル等の見た目は変えない */
+  #screen-start .card, #screen-warmup .card, #screen-end .card {
+    max-width: 860px; margin-left: auto; margin-right: auto;
   }
   .card {
     background: var(--card); border: 1px solid var(--border);
@@ -77,6 +81,7 @@
   /* ---- Question image ---- */
   .qimg-box { text-align: center; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 18px; }
   .qimg-box img { max-width: 100%; height: auto; }
+  #q-img { width: 958px; max-width: 100%; }  /* 本番画像を約1.2倍に（元798px）。狭い画面では幅100%で縮小 */
 
   /* ---- Number grid (1-12, 3 rows x 4 cols) ---- */
   .numgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-width: 480px; }
@@ -120,8 +125,8 @@
       <p class="muted">所要時間の目安：約7分（ウォーミングアップ1問＋本番6問、各1分）</p>
       <p>パターン（規則性）を見つける問題に取り組んでいただきます。左側のイラストの「?」に当てはまるものを、右側の選択肢から選んでください。</p>
 
-      <ul class="muted" style="line-height:1.8;">
-        <li>各問の目安時間は <strong>60秒</strong> です（タイマー表示。0になっても自動では進みません）。</li>
+      <ul class="muted" style="line-height:1.8; font-size:16px;">
+        <li>各問の制限時間は <strong>60秒</strong> です。</li>
         <li>「次へ」で進みます。<strong>前の問題には戻れません</strong>。</li>
       </ul>
 

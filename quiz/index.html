@@ -121,8 +121,8 @@
       <p>パターン（規則性）を見つける問題に取り組んでいただきます。左側のイラストの「?」に当てはまるものを、右側の選択肢から選んでください。</p>
 
       <ul class="muted" style="line-height:1.8;">
-        <li>各問の制限時間は <strong>60秒</strong> です。時間切れで自動的に次へ進みます。</li>
-        <li>「次へ」で先に進めますが、<strong>前の問題には戻れません</strong>。</li>
+        <li>各問の目安時間は <strong>60秒</strong> です（タイマー表示。0になっても自動では進みません）。</li>
+        <li>「次へ」で進みます。<strong>前の問題には戻れません</strong>。</li>
       </ul>
 
       <div class="field">
@@ -234,7 +234,8 @@
     selection: null,           // 現在の問題で選択中の番号
     questionStart: 0,          // 現在の問題の開始時刻(ms)
     answers: [],               // {id, selected, timeSec}
-    advancing: false
+    advancing: false,
+    expired: false             // 現問のタイマーが0に達したか
   };
   var timerRAF = null;
 
@@ -267,7 +268,15 @@
       if (remaining <= 10) { timerEl.classList.add("danger"); barEl.classList.add("danger"); }
       else if (remaining <= 20) { timerEl.classList.add("warn"); barEl.classList.add("warn"); }
 
-      if (remaining <= 0) { cancelTimer(); onExpire(); return; }
+      if (remaining <= 0) {
+        // 0で停止するだけ。自動では画面遷移しない（代理入力のため「次へ」押下のみで進む）
+        timerEl.textContent = fmt(0);
+        barEl.style.width = "0%";
+        timerEl.classList.add("danger"); barEl.classList.add("danger");
+        cancelTimer();
+        if (onExpire) onExpire();
+        return;
+      }
       timerRAF = requestAnimationFrame(tick);
     }
     tick();
@@ -302,7 +311,7 @@
     var done = false;
     function finish() { if (done) return; done = true; cancelTimer(); startQuiz(); }
     $("btn-warmup-next").onclick = finish;
-    startTimer(Date.now(), $("warmup-timer"), $("warmup-bar"), finish);
+    startTimer(Date.now(), $("warmup-timer"), $("warmup-bar"), null);  // 0で自動遷移しない
   }
 
   // ====== QUIZ ======
@@ -336,6 +345,7 @@
   function renderQuestion() {
     state.advancing = false;
     state.selection = null;
+    state.expired = false;
     var q = QUESTIONS[state.qIndex];
     $("q-progress").textContent = "問題 " + (state.qIndex + 1) + " / " + QUESTIONS.length;
     $("q-img").src = q.img;
@@ -345,21 +355,21 @@
     for (var i = 0; i < btns.length; i++) btns[i].classList.remove("selected");
     show("screen-quiz");
     state.questionStart = Date.now();
-    startTimer(state.questionStart, $("q-timer"), $("q-bar"), function () { advance(true); });
+    startTimer(state.questionStart, $("q-timer"), $("q-bar"), function () { state.expired = true; });
   }
 
-  $("btn-q-next").onclick = function () { advance(false); };
+  $("btn-q-next").onclick = function () { advance(); };
 
-  function advance(autoByTimeout) {
-    if (state.advancing) return;     // 自動送り×手動の二重遷移ガード
+  function advance() {
+    if (state.advancing) return;     // 二重遷移ガード（「次へ」連打対策）
     state.advancing = true;
     cancelTimer();
-    var timeSec = Math.min(TIME_LIMIT, (Date.now() - state.questionStart) / 1000);
+    var timeSec = (Date.now() - state.questionStart) / 1000;  // 60秒超も実時間で記録
     state.answers.push({
       id: QUESTIONS[state.qIndex].id,
-      selected: state.selection,     // 未選択(時間切れ等)は null
+      selected: state.selection,     // 未選択は null
       timeSec: Math.round(timeSec * 10) / 10,
-      timedOut: !!autoByTimeout && state.selection === null
+      timedOut: state.expired && state.selection === null
     });
     state.qIndex++;
     if (state.qIndex < QUESTIONS.length) {

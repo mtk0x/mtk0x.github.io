@@ -16,7 +16,13 @@
  *   H(8)  04(6)                ← 第4問
  *   I(9)  05(9)                ← 第5問
  *   J(10) 06(12)               ← 第6問
- *   L(12) 職種                  ← 職種（この列に「職種」見出しを用意しておく）
+ *   L(12) 職種                  ← 職種
+ *   M(13) 07(13)               ← 第7問で選んだ番号
+ *   N(14) 08(15)               ← 第8問
+ *   O〜V(15〜22) 時間01〜時間08  ← 第1〜8問の所要時間（秒。ページが送る timeSec）
+ *   ※ 送信に含まれない問題（6問だった時期のページからの第7〜8問など）は、
+ *     選んだ番号（M〜N）・所要時間（O〜V）とも空欄にする。
+ *     送信に含まれる問題で番号を選ばなかった時は 0。
  *   ※ B(2)スコア / D(4)点数 / K(11)削除06 は触らない
  *
  * 設置方法: 対象スプレッドシートを開く → 拡張機能 → Apps Script →
@@ -40,8 +46,24 @@ function doPost(e) {
     // 回答を id でひけるように
     var ans = {};
     (data.answers || []).forEach(function (a) { ans[a.id] = a; });
-    // 未回答（番号を選ばなかった）の場合は 0 を入れる（空白にしない）
-    function sel(id) { return (ans[id] && ans[id].selected != null) ? ans[id].selected : 0; }
+    // URL が公開で誰でも送れるため、受け取った値は型・範囲を絞ってから書く（数式の埋め込み防止）
+    // 送信に含まれる問題で番号が 0〜12 の整数でない（未選択を含む）場合は 0、送信に含まれない問題は空欄（0 にしない）
+    function sel(id) {
+      if (!ans[id]) return '';
+      var n = Number(ans[id].selected);
+      return (ans[id].selected != null && n % 1 === 0 && n >= 0 && n <= 12) ? n : 0;
+    }
+    // 所要時間（秒）。送信に含まれない問題・0 以上の有限の数でない値は空欄
+    function tm(id) {
+      if (!ans[id] || ans[id].timeSec == null) return '';
+      var t = Number(ans[id].timeSec);
+      return (isFinite(t) && t >= 0) ? t : '';
+    }
+    // 氏名・職種: 先頭が = + - @ の文字列は ' を付けて文字として書く（数式にしない）
+    function txt(v) {
+      var s = String(v == null ? '' : v);
+      return /^[=+\-@]/.test(s) ? "'" + s : s;
+    }
 
     // 既存データの最終行は「A列（タイムスタンプ）」基準で判定する。
     // （B/D が ARRAYFORMULA だと getLastRow() が膨らむため、A列の中身で数える）
@@ -55,11 +77,17 @@ function doPost(e) {
 
     // 担当列だけ個別に書き込む（B/D/K は触らない）
     sheet.getRange(row, 1).setValue(data.submittedAt ? new Date(data.submittedAt) : new Date()); // A タイムスタンプ
-    sheet.getRange(row, 3).setValue(data.name || '');                                            // C 氏名
+    sheet.getRange(row, 3).setValue(txt(data.name || ''));                                       // C 氏名
     sheet.getRange(row, 5, 1, 6).setValues([[                                                    // E〜J 第1〜6問
       sel('q1'), sel('q2'), sel('q3'), sel('q4'), sel('q5'), sel('q6')
     ]]);
-    sheet.getRange(row, 12).setValue(data.jobType || '');                                        // L 職種
+    sheet.getRange(row, 12).setValue(txt(data.jobType || ''));                                   // L 職種
+    sheet.getRange(row, 13, 1, 2).setValues([[                                                   // M〜N 第7〜8問
+      sel('q7'), sel('q8')
+    ]]);
+    sheet.getRange(row, 15, 1, 8).setValues([[                                                   // O〜V 第1〜8問の所要時間（秒）
+      tm('q1'), tm('q2'), tm('q3'), tm('q4'), tm('q5'), tm('q6'), tm('q7'), tm('q8')
+    ]]);
 
     return ContentService
       .createTextOutput(JSON.stringify({ ok: true, row: row }))

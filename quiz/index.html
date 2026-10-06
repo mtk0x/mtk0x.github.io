@@ -97,10 +97,9 @@
 
   /* ---- Warmup explanation ---- */
   .explain { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin: 16px 0; }
-  .explain h2 { font-size: 16px; }
-  .explain p { font-size: 14px; }
+  .explain p { font-size: 16px; margin-bottom: 8px; }
   .explain ul { margin: 8px 0 0; padding-left: 20px; }
-  .explain li { font-size: 14px; line-height: 1.7; margin-bottom: 6px; }
+  .explain li { font-size: 16px; line-height: 1.7; margin-bottom: 4px; }
   .badge { display: inline-block; background: #fef3c7; color: #92400e; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 99px; margin-bottom: 10px; }
 
   /* ---- End screen ---- */
@@ -122,7 +121,7 @@
   <section id="screen-start" class="screen active">
     <div class="card">
       <h1>パターン認識クイズ</h1>
-      <p class="muted">所要時間の目安：約7分（ウォーミングアップ1問＋本番6問、各1分）</p>
+      <p class="muted">所要時間の目安：約9分（ウォーミングアップ1問＋本番8問、各1分）</p>
       <p>パターン（規則性）を見つける問題に取り組んでいただきます。左側のイラストの「?」に当てはまるものを、右側の選択肢から選んでください。</p>
 
       <ul class="muted" style="line-height:1.8; font-size:16px;">
@@ -154,22 +153,15 @@
   <section id="screen-warmup" class="screen">
     <div class="card">
       <div class="topbar">
-        <span class="progress-label">ウォーミングアップ（採点対象外）</span>
+        <span class="progress-label">ウォーミングアップ（採点対象外）：気軽に解き方を確認してください</span>
         <span id="warmup-timer" class="timer">1:00</span>
       </div>
       <div class="timebar-track"><div id="warmup-bar" class="timebar-fill"></div></div>
 
-      <p>この問題はウォーミングアップ用です。<strong>採点対象外</strong>なので、気軽に解き方を確認してください。</p>
-
       <div class="qimg-box"><img src="images/warmup.png" alt="ウォーミングアップ問題"></div>
 
       <div class="explain">
-        <h2>回答方法</h2>
-        <p>左側の 3×3 マスには規則が隠れています。「?」に入るものを規則から推測し、右側の選択肢（１〜１２）から答えを選んでください。</p>
-      </div>
-
-      <div class="explain">
-        <h2>解き方のポイント（この問題の場合）</h2>
+        <p>左側の 3×3 マスには規則が隠れています。「?」に入るものを規則から推測し、右側の選択肢（1〜12）から答えを選んでください。</p>
         <p>この問題には規則が2つあります。</p>
         <ul>
           <li><strong>規則1：線の角度</strong> ― 各行を左から右に見ると、線が45度ずつ回転しています。</li>
@@ -183,11 +175,11 @@
     </div>
   </section>
 
-  <!-- ===== QUIZ (reused q1-q6) ===== -->
+  <!-- ===== QUIZ (reused q1-q8) ===== -->
   <section id="screen-quiz" class="screen">
     <div class="card">
       <div class="topbar">
-        <span id="q-progress" class="progress-label">問題 1 / 6</span>
+        <span id="q-progress" class="progress-label">問題 1 / 8</span>
         <span id="q-timer" class="timer">1:00</span>
       </div>
       <div class="timebar-track"><div id="q-bar" class="timebar-fill"></div></div>
@@ -229,7 +221,9 @@
     { id: "q3", img: "images/q3.png" },
     { id: "q4", img: "images/q4.png" },
     { id: "q5", img: "images/q5.png" },
-    { id: "q6", img: "images/q6.png" }
+    { id: "q6", img: "images/q6.png" },
+    { id: "q7", img: "images/q7.png" },
+    { id: "q8", img: "images/q8.png" }
   ];
 
   // ====== STATE ======

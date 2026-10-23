@@ -17,7 +17,7 @@
 A  タイムスタンプ        ← 送信時刻（自動）
 B  スコア               ← 触らない（フォームだった時期の値。非表示）
 C  氏名を記入してください ← 氏名
-D  職種                 ← 職種（Product Engineer / Design Engineer / BizOps）
+D  職種                 ← 職種（Product Engineer / Design Engineer / AI Engineer / BizOps）
 E  点数(100)            ← 触らない（シートの関数）
 F  01(5)               ← 第1問で選んだ番号(1〜12)
 G  02(2)               ← 第2問
